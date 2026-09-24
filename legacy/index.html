@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cornell Physical AI Hackathon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0a0a;          /* text on the glass */
+    --pane:#e2e2e2;         /* fallback ground if WebGL is missing */
+    --display:'Source Serif 4', 'Tiempos Text', Georgia, 'Times New Roman', serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--pane);color:var(--ink);font-family:var(--display);font-optical-sizing:auto;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  body{min-height:100vh;overflow-x:hidden}
+
+  /* the pane of glass — fixed, everything scrolls over it */
+  #glass{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0}
+
+  /* ink layer */
+  .page{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column}
+  .page > *{pointer-events:none}
+  .page a{pointer-events:auto}
+  
+  .hero{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:8vh clamp(20px,4vw,56px) 19vh}
+  /* the subtitle is Arial, painted through the enamel layer; its words are what the arm nudges */
+  .sub{margin:0;color:transparent;font-family:Arial,Helvetica,sans-serif;font-size:clamp(14px,1.5vw,22px);
+    letter-spacing:.16em;text-transform:uppercase;line-height:1.8;max-width:60ch}
+  .sub span{display:block}
+  .desc{margin:1.5em 0 0;color:var(--ink);font-family:Arial,Helvetica,sans-serif;font-size:clamp(12px,.95vw,14px);
+    line-height:1.6;letter-spacing:.005em;max-width:52ch}
+  .desc{color:transparent}
+  .desc p{margin:0 0 .95em}
+  .desc p:last-child{margin-bottom:0}
+  .desc i{font-style:normal;display:inline-block;will-change:transform;transform-origin:50% 50%}
+  .sub i,.sub a{font-style:normal;display:inline-block;will-change:transform;transform-origin:50% 50%}
+  .signup{position:fixed;top:clamp(22px,3.5vh,36px);left:clamp(20px,4vw,56px);z-index:2;display:inline-block;
+    color:transparent;font-family:Arial,Helvetica,sans-serif;font-size:clamp(11px,1.05vw,15px);letter-spacing:.2em;
+    text-transform:uppercase;text-decoration:none;cursor:pointer;will-change:transform;transform-origin:50% 50%}
+  .signup:focus-visible{outline:1px solid var(--ink);outline-offset:6px}
+  /* sponsors: ordinary images pinned to the bottom of the pane, not part of the shader */
+  .sponsors{position:fixed;left:clamp(20px,4vw,56px);max-width:calc(100vw - 2*clamp(20px,4vw,56px));bottom:clamp(22px,3.5vh,36px);z-index:2;
+    display:flex;align-items:center;gap:clamp(36px,5vw,84px)}
+  .logo{display:block;color:var(--ink)}
+  .logo img{display:block;width:var(--w);height:auto}
+  .logo.foundation{--w:clamp(150px,15vw,230px)}
+  .logo.picogrid{--w:clamp(112px,11.4vw,172px)}
+  .logo.kite{display:flex;align-items:center;gap:.45em;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:700;
+    font-size:clamp(16px,1.6vw,23px);letter-spacing:-.02em;line-height:1}
+  .logo.kite img{width:1.2em;height:1.2em}
+  .sponsors{flex-wrap:wrap;row-gap:14px}
+  .hero{padding-bottom:max(130px,15vh)}
+  .desc .meta span{display:block}
+  .desc .meta{margin-top:1.4em}
+  .bare .page,.bare .sponsors,.bare .signup{display:none}
+  @media (max-width:820px){
+    .sponsors{gap:22px} .hero{padding-bottom:max(110px,13vh)}
+    .logo.foundation{--w:118px} .logo.picogrid{--w:90px} .logo.kite{font-size:15px}
+    .desc{font-size:12.5px;max-width:none} .sub{font-size:14px}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="glass" aria-hidden="true"></canvas>
+
+<div class="page">
+  <main class="hero">
+    <div class="copy" id="copy">
+      <p class="sub" id="sub"><span>Cornell University Hosted Physical AI Hackathon</span></p>
+      <div class="desc">
+        <p><span>The Cornell Physical AI Hackathon is for builders who want to make real world impact.</span></p>
+        <p><span>Teams will have a week to plan and design working solutions to challenges, then have a day on site to integrate and test on real robots.</span></p>
+        <p><span>3D printers, extra hardware, and unlimited cloud/AI compute will be provided.</span></p>
+        <p class="meta"><span>Date: November 14, 2026</span><span>Time: TBA</span><span>Location: Duffield Hall, Cornell University</span></p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- sign-up: point this at your form -->
+<a class="signup" href="https://forms.gle/REPLACE-ME" target="_blank" rel="noopener">Sign up →</a>
+
+<div class="sponsors">
+  <a class="logo foundation" href="https://foundation.bot" target="_blank" rel="noopener"><img src="logos/foundation.png" alt="Foundation"></a>
+  <a class="logo picogrid" href="https://picogrid.com" target="_blank" rel="noopener"><img src="logos/picogrid.svg" alt="Picogrid"></a>
+  <a class="logo kite" href="https://kiteml.com" target="_blank" rel="noopener"><img src="logos/kite.svg" alt=""><span>Kite</span></a>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="so101/meshes.js"></script>
+<script src="liquidglass.glsl.js"></script>
+
+<script>
+(() => {
+'use strict';
+if (!window.THREE) return;
+const RAW = location.search.includes('raw');   // ?raw shows the scene without the glass
+if (location.search.includes('bare')) document.documentElement.classList.add('bare');   // ?bare: pane only, no copy
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ------------------------------------------------------------------ */
+/*  1. Split headline into letters (physics bodies)                     */
+/* ------------------------------------------------------------------ */
+const subEl = document.getElementById('sub');
+const letters = [];                                          // physics bodies: one per subtitle word
+const body = (el) => ({ el, x:0, y:0, r:0, vx:0, vy:0, vr:0, cx:0, cy:0, hw:0, hh:0, hit:0, font:'', ls:0, text:el.textContent, hover:0 });
+for (const line of document.querySelectorAll('.sub span, .desc span')) {
+  const link = line.querySelector('a');
+  if (link) { letters.push(body(link)); continue; }
+  const words = line.textContent.split(' '); line.textContent = '';
+  words.forEach((w, i) => {
+    const el = document.createElement('i'); el.textContent = w; line.appendChild(el);
+    letters.push(body(el));
+    if (i < words.length - 1) line.appendChild(document.createTextNode(' '));
+  });
+}
+for (const a of document.querySelectorAll('.signup')) letters.push(Object.assign(body(a), { noIdle:true }));
+for (const L of letters) if (L.el.tagName === 'A') {
+  L.el.addEventListener('mouseenter', () => { L.hover = 1; paintDirty = true; });
+  L.el.addEventListener('mouseleave', () => { L.hover = 0; paintDirty = true; });
+}
+function measureLetters(){
+  for (const L of letters) {
+    const t = L.el.style.transform; L.el.style.transform = '';
+    const b = L.el.getBoundingClientRect();
+    L.cx = b.left + b.width/2; L.cy = b.top + b.height/2; L.hw = b.width/2; L.hh = b.height/2;
+    L.el.style.transform = t;
+  }
+}
+
+// ---- the paint layer: the headline is rasterised into a mask and shaded as enamel on the pane
+const paintCanvas = document.createElement('canvas');
+const pctx = paintCanvas.getContext('2d');
+let paintTex = null, paintDirty = true;
+function letterFonts(){
+  for (const L of letters) {
+    const cs = getComputedStyle(L.el);
+    L.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    L.ls = parseFloat(cs.letterSpacing) || 0;
+    L.text = cs.textTransform === 'uppercase' ? L.el.textContent.toUpperCase() : L.el.textContent;
+    L.small = parseFloat(cs.fontSize) < 17;                 // thin, flat paint below this size: keeps small type crisp
+  }
+}
+function drawPaint(){
+  const dpr = Math.min(devicePixelRatio || 1, 1.5);
+  if (paintCanvas.width !== Math.round(innerWidth*dpr)) {
+    paintCanvas.width = Math.round(innerWidth*dpr); paintCanvas.height = Math.round(innerHeight*dpr);
+  }
+  pctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  pctx.clearRect(0, 0, innerWidth, innerHeight);
+  pctx.textAlign = 'left'; pctx.textBaseline = 'middle';
+  for (const L of letters) {
+    if (!L.font) continue;
+    pctx.save();
+    pctx.translate(L.cx + L.x, L.cy + L.y);
+    if (L.r) pctx.rotate(L.r);
+    pctx.font = L.font;
+    pctx.fillStyle = L.small ? '#f00' : '#ff0';            // r = coverage, g = relief
+    let x = -L.hw;
+    for (const ch of L.text) { pctx.fillText(ch, x, 0); x += pctx.measureText(ch).width + L.ls; }
+    if (L.el.dataset.underline !== undefined) pctx.fillRect(-L.hw, L.hh*0.62, x + L.hw - L.ls, L.hover ? 2 : 1);
+    pctx.restore();
+  }
+  if (paintTex) paintTex.needsUpdate = true;
+  paintDirty = false;
+}
+
+document.fonts && document.fonts.ready.then(() => { measureLetters(); letterFonts(); paintDirty = true; });
+addEventListener('resize', () => { measureLetters(); resize(); paintDirty = true; });
+addEventListener('scroll', () => { measureLetters(); paintDirty = true; }, { passive:true });
+measureLetters(); letterFonts();
+
+/* ------------------------------------------------------------------ */
+/*  2. Scene behind the glass                                           */
+/* ------------------------------------------------------------------ */
+const canvas = document.getElementById('glass');
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ canvas, antialias:false, powerPreference:'high-performance' }); }
+catch (e) { canvas.hidden = true; return; }   // no WebGL: the ink still reads on the plain pane
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // we gamma-encode in the glass shader
+renderer.toneMapping = THREE.NoToneMapping;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#d9d9d9');
+const CAM_Z = 2.2, FOV = 40;
+const camera = new THREE.PerspectiveCamera(FOV, 1, 0.5, 12);
+camera.position.set(0, 0, CAM_Z);
+
+// studio
+scene.add(new THREE.HemisphereLight('#f2f2f2', '#7a7a7a', 0.9));
+const key = new THREE.DirectionalLight('#ffffff', 2.4);
+key.position.set(-1.6, 2.6, 1.8); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0008; key.shadow.normalBias = 0.02;
+Object.assign(key.shadow.camera, { left:-2.4, right:2.4, top:2.4, bottom:-2.4, near:0.5, far:9 });
+scene.add(key);
+const fill = new THREE.DirectionalLight('#eeeeee', 0.6); fill.position.set(2.2, 0.6, 1.2); scene.add(fill);
+
+const backWall = new THREE.Mesh(new THREE.PlaneGeometry(14, 10), new THREE.MeshStandardMaterial({ color:'#d4d4d4', roughness:1 }));
+backWall.position.set(0, 1, -3.2); backWall.receiveShadow = true; scene.add(backWall);
+const FLOOR_Y = -1.05;
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 10), new THREE.MeshStandardMaterial({ color:'#b3b3b3', roughness:0.95 }));
+floor.rotation.x = -Math.PI/2; floor.position.y = FLOOR_Y; floor.receiveShadow = true; scene.add(floor);
+
+// materials — the SO-101 prints in PLA and runs on Feetech STS3215 servos
+const M = {
+  pla:   new THREE.MeshStandardMaterial({ color:'#111111', roughness:0.55, metalness:0.0 }),
+  servo: new THREE.MeshStandardMaterial({ color:'#2c2c2c', roughness:0.4, metalness:0.2 }),
+  pcb:   new THREE.MeshStandardMaterial({ color:'#3a3a3a', roughness:0.5, metalness:0.2 }),
+  bench: new THREE.MeshStandardMaterial({ color:'#e6e6e6', roughness:0.85 }),
+};
+const box = (w,h,d,mat,x=0,y=0,z=0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat); m.position.set(x,y,z); m.castShadow = m.receiveShadow = true; return m; };
+
+// ---- the real SO-101: links, joints and meshes straight from so101_new_calib.urdf (TheRobotStudio/SO-ARM100)
+const geomCache = {};
+function meshGeometry(name) {
+  if (geomCache[name]) return geomCache[name];
+  const m = SO101.meshes[name];
+  const bin = atob(m.b64); const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const q = new Uint16Array(bytes.buffer);
+  const raw = new Float32Array(q.length);
+  const ext = [0,1,2].map(i => (m.max[i] - m.min[i]) / 65535);
+  for (let i = 0; i < q.length; i++) { const c = i % 3; raw[i] = m.min[c] + q[i]*ext[c]; }
+  // quantisation collapses sliver triangles to zero area; keep only faces with a real normal
+  const pos = new Float32Array(raw.length); let n = 0;
+  for (let i = 0; i < raw.length; i += 9) {
+    const ax = raw[i+3]-raw[i], ay = raw[i+4]-raw[i+1], az = raw[i+5]-raw[i+2];
+    const bx = raw[i+6]-raw[i], by = raw[i+7]-raw[i+1], bz = raw[i+8]-raw[i+2];
+    const cx = ay*bz - az*by, cy = az*bx - ax*bz, cz = ax*by - ay*bx;
+    if (cx*cx + cy*cy + cz*cz < 1e-20) continue;
+    pos.set(raw.subarray(i, i+9), n); n += 9;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos.subarray(0, n), 3));
+  g.computeVertexNormals();                                   // non-indexed → flat shading, like the STL
+  return geomCache[name] = g;
+}
+function applyOrigin(obj, o) {
+  if (!o) return;
+  const xyz = (o.getAttribute('xyz') || '0 0 0').split(/\s+/).map(Number);
+  const rpy = (o.getAttribute('rpy') || '0 0 0').split(/\s+/).map(Number);
+  obj.position.set(xyz[0], xyz[1], xyz[2]);
+  obj.rotation.set(rpy[0], rpy[1], rpy[2], 'ZYX');            // URDF rpy = fixed-axis roll, pitch, yaw
+}
+function buildRobot() {
+  const doc = new DOMParser().parseFromString(SO101.urdf, 'text/xml');
+  const links = {}, joints = {};
+  doc.querySelectorAll('robot > link').forEach(l => {
+    const g = new THREE.Group(); g.name = l.getAttribute('name'); links[g.name] = g;
+    l.querySelectorAll('visual').forEach(v => {
+      const meshEl = v.querySelector('mesh'); if (!meshEl) return;
+      const file = meshEl.getAttribute('filename').split('/').pop();
+      const mat = /sts3215/.test(file) ? M.servo : /waveshare/.test(file) ? M.pcb : M.pla;
+      const mesh = new THREE.Mesh(meshGeometry(file), mat);
+      applyOrigin(mesh, v.querySelector('origin'));
+      mesh.castShadow = mesh.receiveShadow = true;
+      g.add(mesh);
+    });
+  });
+  doc.querySelectorAll('robot > joint').forEach(j => {
+    const name = j.getAttribute('name');
+    const parent = links[j.querySelector('parent').getAttribute('link')];
+    const child  = links[j.querySelector('child').getAttribute('link')];
+    const frame = new THREE.Group(); frame.name = name + '_frame';
+    applyOrigin(frame, j.querySelector('origin'));
+    parent.add(frame); frame.add(child);
+    if (j.getAttribute('type') === 'revolute') {
+      const ax = j.querySelector('axis').getAttribute('xyz').split(/\s+/).map(Number);
+      const lim = j.querySelector('limit');
+      joints[name] = { node:child, axis:new THREE.Vector3(...ax).normalize(), lower:+lim.getAttribute('lower'), upper:+lim.getAttribute('upper'), q:0 };
+    }
+  });
+  return { root:links.base_link, links, joints };
+}
+const robot = buildRobot();
+const J = robot.joints;
+const setJoint = (j, v) => { j.q = THREE.MathUtils.clamp(v, j.lower, j.upper); j.node.quaternion.setFromAxisAngle(j.axis, j.q); };
+
+// place it: URDF is z-up in metres; the bench is in our scene units
+const SCALE = 3.6;
+const BENCH_Y = -0.72;
+const BASE = new THREE.Vector3(0.32, BENCH_Y, -0.62);
+const bench = box(1.5, BENCH_Y - FLOOR_Y, 0.8, M.bench, 0.45, (BENCH_Y + FLOOR_Y)/2, -0.75); scene.add(bench);
+const armRoot = new THREE.Group(); armRoot.position.copy(BASE); scene.add(armRoot);
+const upright = new THREE.Group(); upright.rotation.set(-Math.PI/2, 0, Math.PI/2, 'YXZ'); upright.scale.setScalar(SCALE); armRoot.add(upright);
+upright.add(robot.root);
+const tip = robot.links.gripper_frame_link;                   // the point between the fingertips
+const wristNode = robot.links.wrist_link;
+
+/* ------------------------------------------------------------------ */
+/*  3. Offscreen buffer + the glass pane shader                         */
+/* ------------------------------------------------------------------ */
+let rt, rtH = [], rtQ = [], rtE = [];
+const mk = (w, h, depth) => {
+  const t = new THREE.WebGLRenderTarget(w, h, { type:THREE.HalfFloatType, minFilter:THREE.LinearFilter, magFilter:THREE.LinearFilter, depthBuffer:depth });
+  if (depth) { t.depthTexture = new THREE.DepthTexture(w, h, THREE.UnsignedIntType); t.depthTexture.format = THREE.DepthFormat; }
+  return t;
+};
+function makeRT(w, h) {
+  [rt, ...rtH, ...rtQ].forEach(t => t && t.dispose());
+  rt = mk(w, h, true);
+  rtH = [mk(w>>1, h>>1, false), mk(w>>1, h>>1, false)];
+  rtQ = [mk(w>>2, h>>2, false), mk(w>>2, h>>2, false)];
+  rtE = [mk(w>>3, h>>3, false), mk(w>>3, h>>3, false)];
+}
+// separable gaussian, run a few times at reduced resolution — the scatter of the frosted surface
+const blurMat = new THREE.ShaderMaterial({
+  uniforms: { tex:{ value:null }, dir:{ value:new THREE.Vector2() } },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `precision highp float; varying vec2 vUv; uniform sampler2D tex; uniform vec2 dir;
+    vec3 safe(vec3 c){ return any(isnan(c)) || any(isinf(c)) ? vec3(0.8) : c; }   // never let a bad pixel spread
+    void main(){
+      vec3 c = safe(texture2D(tex, vUv).rgb)*0.2270270270;
+      c += (safe(texture2D(tex, vUv + dir*1.3846153846).rgb) + safe(texture2D(tex, vUv - dir*1.3846153846).rgb))*0.3162162162;
+      c += (safe(texture2D(tex, vUv + dir*3.2307692308).rgb) + safe(texture2D(tex, vUv - dir*3.2307692308).rgb))*0.0702702703;
+      gl_FragColor = vec4(c, 1.0);
+    }`,
+  depthTest:false, depthWrite:false,
+});
+const blurQuad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), blurMat);
+const blurScene = new THREE.Scene(); blurScene.add(blurQuad);
+function blurInto(pair, src, passes, step) {
+  let from = src;
+  for (let i = 0; i < passes; i++) {
+    for (const [dx, dy] of [[1,0],[0,1]]) {
+      const to = from === pair[0] ? pair[1] : pair[0];
+      blurMat.uniforms.tex.value = from.texture || from;
+      blurMat.uniforms.dir.value.set(dx*step/pair[0].width, dy*step/pair[0].height);
+      renderer.setRenderTarget(to); renderer.render(blurScene, postCam);
+      from = to;
+    }
+  }
+  return from;
+}
+
+const glassMat = new THREE.ShaderMaterial({
+  uniforms: {
+    tScene:{ value:null }, tDepth:{ value:null }, tBlurA:{ value:null }, tBlurB:{ value:null }, tBlurC:{ value:null }, tPaint:{ value:null },
+    uRes:{ value:new THREE.Vector2() }, uTime:{ value:0 }, uMouse:{ value:new THREE.Vector2(0.5,0.5) },
+    uNear:{ value:camera.near }, uFar:{ value:camera.far }, uCamZ:{ value:CAM_Z },
+    uTanHalf:{ value:Math.tan(FOV*Math.PI/360) }, uAspect:{ value:1 },
+    // liquid-glass slabs: rect = (cx, cy, hw, hh) in device px y-up; param = (radius, zR, bevelMode, hoverBrightness)
+    uLGCount:{ value:0 },
+    uLGRect:{ value:[0,1,2,3].map(() => new THREE.Vector4()) },
+    uLGParam:{ value:[0,1,2,3].map(() => new THREE.Vector4()) },
+    uLG1:{ value:new THREE.Vector4(0.69, 0.05, 0.12, 0.25) },   // refraction, chroma, edge highlight, specular
+    uLG2:{ value:new THREE.Vector4(1.0, 0.25, 0.03, 0.0) },     // fresnel, blur, brightness, saturation
+    uLG3:{ value:new THREE.Vector4(0.0, 0.22, 12.0, 2.0) },     // tint, shadow opacity, shadow spread, shadow offset
+  },
+  vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+  fragmentShader: `
+    precision highp float;
+    varying vec2 vUv;
+    uniform sampler2D tScene, tDepth, tBlurA, tBlurB, tBlurC, tPaint;
+    uniform int uLGCount; uniform vec4 uLGRect[4]; uniform vec4 uLGParam[4]; uniform vec4 uLG1, uLG2, uLG3;
+    uniform vec2 uRes, uMouse; uniform float uTime, uNear, uFar, uCamZ, uTanHalf, uAspect;
+
+    // ---- noise -------------------------------------------------------
+    float hash(vec2 p){ p = fract(p*vec2(123.34, 456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+    float vnoise(vec2 p){
+      vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+      return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
+    }
+    // acid-etched surface height: fine grain + a little larger-scale unevenness
+    float etch(vec2 p){
+      return vnoise(p*1.0)*0.55 + vnoise(p*2.3+7.1)*0.28 + vnoise(p*5.1+3.3)*0.17;
+    }
+    vec2 etchGrad(vec2 uv){
+      vec2 p = uv*vec2(uAspect,1.0)*420.0;
+      float e = 0.9;
+      float dx = etch(p+vec2(e,0)) - etch(p-vec2(e,0));
+      float dy = etch(p+vec2(0,e)) - etch(p-vec2(0,e));
+      return vec2(dx,dy);
+    }
+
+    // ---- depth -------------------------------------------------------
+    float distBehind(vec2 uv){               // world distance behind the glass plane (z=0)
+      float d = texture2D(tDepth, uv).r;
+      float z = d*2.0-1.0;
+      float view = (2.0*uNear*uFar)/(uFar+uNear - z*(uFar-uNear));
+      return max(view - uCamZ, 0.0);
+    }
+    // a diffusing surface scatters into a cone: blur radius grows linearly with distance behind it
+    float blurRadius(float dist){
+      return (1.0 + 44.0*dist) * (uRes.y/900.0);
+    }
+
+    // ---- environment reflected in the pane ---------------------------
+    vec3 env(vec3 r){
+      vec3 top = vec3(0.98), mid = vec3(0.78), bot = vec3(0.30);
+      vec3 c = r.y > 0.0 ? mix(mid, top, pow(r.y,0.6)) : mix(mid, bot, pow(-r.y,0.8));
+      // a tall soft window off to the upper left
+      vec2 w = vec2(r.x + 0.55, r.y - 0.35);
+      float win = smoothstep(0.42, 0.0, length(w*vec2(1.0,0.6)));
+      return c + vec3(1.0)*win*0.9;
+    }
+
+    vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
+
+    //__LG__
+
+    // ---- the pane as seen through one pixel: etch refraction, cone blur, depth haze
+    vec3 pane(vec2 uv, bool full){
+      vec2 px = 1.0/uRes;
+      float sPx = uRes.y/900.0;
+      vec2 g = etchGrad(uv);
+      float dc = distBehind(uv);
+      float spread = 0.003 + 0.010*(dc/(dc+0.8));
+      vec2 refr = g*spread*vec2(1.0/uAspect, 1.0);      // fine sand of the etch, for what's close
+      vec2 refrF = g*0.0025*vec2(1.0/uAspect, 1.0);       // what's far has already been scattered by the blur
+      float dc0 = distBehind(uv + refr);
+      float rr = blurRadius(max(dc0, dc));
+      vec3 mid; mid.r = texture2D(tBlurA, uv + refrF*1.3).r; mid.g = texture2D(tBlurA, uv + refrF).g; mid.b = texture2D(tBlurA, uv + refrF*0.7).b;
+      vec3 near = mid;
+      if (full) {
+        // a small jittered gather over the sharp image: the sandy look of light just starting to scatter
+        float rN = min(rr, 8.0*sPx);
+        float ang = hash(uv*uRes)*6.2831;
+        float ca = cos(ang), sa = sin(ang);
+        mat2 rot = mat2(ca,-sa,sa,ca);
+        vec2 poisson[8];
+        poisson[0]=vec2(-0.613,0.617); poisson[1]=vec2(0.170,-0.041); poisson[2]=vec2(-0.299,-0.578); poisson[3]=vec2(0.645,0.493);
+        poisson[4]=vec2(-0.651,-0.114); poisson[5]=vec2(0.421,-0.615); poisson[6]=vec2(-0.108,0.907); poisson[7]=vec2(0.928,0.036);
+        near = vec3(0.0);
+        for (int i=0;i<8;i++){
+          vec2 suv = uv + refr + (rot*poisson[i])*rN*px;
+          vec3 c;
+          c.r = texture2D(tScene, suv + refr*0.12).r;
+          c.g = texture2D(tScene, suv).g;
+          c.b = texture2D(tScene, suv - refr*0.12).b;
+          near += any(isnan(c)) || any(isinf(c)) ? vec3(0.8) : c;
+        }
+        near /= 8.0;
+      }
+      vec3 farB; farB.r = texture2D(tBlurB, uv + refrF*1.5).r; farB.g = texture2D(tBlurB, uv + refrF).g; farB.b = texture2D(tBlurB, uv + refrF*0.5).b;
+      vec3 farC = texture2D(tBlurC, uv + refrF).rgb;
+      // pyramid levels sit at ~10 / 30 / 62 px of scatter; interpolate by the cone radius
+      float rA = 10.0*sPx, rB = 30.0*sPx, rC = 62.0*sPx;
+      vec3 col = rr < rA ? mix(near, mid, rr/rA)
+               : rr < rB ? mix(mid, farB, (rr-rA)/(rB-rA))
+               :           mix(farB, farC, clamp((rr-rB)/(rC-rB), 0.0, 1.0));
+      // multiple scattering: the deeper the object, the more of its light is lost to an even haze
+      float haze = 1.0 - exp(-max(dc0, 0.0)*0.55);
+      return mix(col, vec3(0.92), 0.03 + 0.30*haze);
+    }
+    // the pane scattered a little further: what a glass slab blurs
+    vec3 paneBlur(vec2 uv, float amount){
+      vec2 refrF = etchGrad(uv)*0.0025*vec2(1.0/uAspect, 1.0);
+      vec3 b = mix(texture2D(tBlurA, uv + refrF).rgb, texture2D(tBlurB, uv + refrF).rgb, amount);
+      float haze = 1.0 - exp(-max(distBehind(uv), 0.0)*0.55);
+      return mix(b, vec3(0.92), 0.03 + 0.30*haze);
+    }
+
+    void main(){
+      vec2 uv = vUv;
+      vec2 px = 1.0/uRes;
+      vec2 ndc = uv*2.0-1.0;
+      vec3 viewDir = normalize(vec3(ndc.x*uTanHalf*uAspect, ndc.y*uTanHalf, -1.0));
+      vec2 g = etchGrad(uv);
+      vec3 N = normalize(vec3(g*1.8, 1.0));              // fine etch: glints
+      vec3 Ns = normalize(vec3(etchGrad(uv*0.35+0.3)*0.9, 1.0)); // broad unevenness: reflection
+      vec3 col = pane(uv, true);
+
+      // ---- liquid glass: clear slabs lying on the frosted pane, behind the copy, the button, the sponsors
+      vec2 pp = uv*uRes;
+      int hit = -1; float hitSdf = 1e9;
+      for (int i = 0; i < 4; i++) {
+        if (i >= uLGCount) break;
+        float sd = lgSDF(pp - uLGRect[i].xy, uLGRect[i].zw, min(uLGParam[i].x, min(uLGRect[i].z, uLGRect[i].w)));
+        if (sd < hitSdf) { hitSdf = sd; hit = i; }
+      }
+      if (hit >= 0 && hitSdf > 0.0) {
+        float shadow = 0.0;
+        for (int i = 0; i < 4; i++) {
+          if (i >= uLGCount) break;
+          shadow += lgShadow(pp - uLGRect[i].xy, uLGRect[i].zw, uLGParam[i].x, uLG3.y, uLG3.z, uLG3.w);
+        }
+        col *= 1.0 - min(shadow, 1.0);
+      }
+      if (hit >= 0 && hitSdf < 1.0) {
+        vec4 rc = uLGRect[hit]; vec4 pr = uLGParam[hit];
+        vec2 p = pp - rc.xy;
+        LGSurf s = lgSurface(p, rc.zw, pr.x, pr.y, uLG1.x, uLG1.y, pr.z);
+        vec2 uvR = uv + s.refrPx*px;
+        vec2 ca = s.caPx*px;
+        vec3 sharp = vec3(pane(uvR + ca, false).r, pane(uvR, true).g, pane(uvR - ca, false).b);
+        vec3 soft = mix(sharp, paneBlur(uvR, uLG2.y), clamp(uLG2.y*1.5, 0.0, 1.0));
+        vec3 bg = mix(sharp, soft, 1.0 - s.edge*0.15);     // the rim stays crisp, the body softens
+        vec3 glass = lgShade(bg, s, p, rc.zw, uLG1.z, uLG1.w, uLG2.x, uLG2.z + pr.w, uLG2.w, uLG3.x);
+        col = mix(col, glass, s.mask);
+      }
+
+      // the headline: enamel painted on the front of the pane
+      vec4 pt = texture2D(tPaint, uv);
+      float pmC = pt.r;
+      float rel = pt.g / max(pt.r, 1e-3);                  // 1: raised enamel, 0: thin flat coat
+      // paint height: a white bar is one coat, black lettering is a second coat on top of it,
+      // so both the bar's edge and every letter edge stand proud of the glass
+      #define PH(t) ((t).r)
+      float hL = PH(texture2D(tPaint, uv - vec2(px.x,0.0)*1.5)), hR = PH(texture2D(tPaint, uv + vec2(px.x,0.0)*1.5));
+      float hD = PH(texture2D(tPaint, uv - vec2(0.0,px.y)*1.5)), hU = PH(texture2D(tPaint, uv + vec2(0.0,px.y)*1.5));
+      float pm = clamp(pmC*1.08, 0.0, 1.0);
+      // paint relief: edges of the stroke are raised, and the body carries faint brush texture
+      vec2 pgrad = vec2(hR - hL, hU - hD);
+      float brush = vnoise(vec2(uv.x*uRes.x*0.06, uv.y*uRes.y*0.55));
+      vec2 bgrad = vec2(vnoise(vec2(uv.x*uRes.x*0.06+3.1, uv.y*uRes.y*0.55)) - brush,
+                        vnoise(vec2(uv.x*uRes.x*0.06, uv.y*uRes.y*0.55+3.1)) - brush);
+      vec3 Np = normalize(vec3((-pgrad*2.0 - bgrad*0.18*pm)*rel, 1.0));
+      // pigment: near-black, unevenly dense the way a loaded brush leaves it
+      float pig = 0.003 + 0.004*vnoise(uv*uRes*0.13) + 0.0015*brush;
+      vec3 paintCol = vec3(pig);
+      col = mix(col, paintCol, pm);
+
+      // Fresnel reflection of the room off the front surface — the glass clear-coats everything,
+      // and the paint's raised edges catch it at their own angles
+      vec3 Nsurf = normalize(mix(Ns, Np, pm));
+      float cosT = clamp(dot(-viewDir, Nsurf), 0.0, 1.0);
+      float F = 0.035 + 0.965*pow(1.0-cosT, 5.0);
+      vec3 R = reflect(viewDir, Nsurf);
+      col += env(R)*F*mix(0.55, 0.85, pm);
+
+      // micro-facet glints: the etch sparkles; the enamel gives one tight gloss highlight
+      vec3 Ld = normalize(vec3(-0.45 + (uMouse.x-0.5)*0.15, 0.7 + (uMouse.y-0.5)*0.15, 0.55));
+      vec3 H = normalize(Ld - viewDir);
+      float specG = pow(max(dot(N,H),0.0), 90.0);
+      float specP = pow(max(dot(Np,H),0.0), 160.0);
+      col += vec3(1.0)*mix(specG*0.10, specP*0.45*rel, pm);
+
+      // the etch grain reads on bare glass, not through the paint
+      col += (hash(uv*uRes*1.7)-0.5)*0.006*(1.0-pm);
+
+      col = aces(col*1.02);
+      col = pow(col, vec3(1.0/2.2));
+      gl_FragColor = vec4(col, 1.0);
+    }`.replace('//__LG__', window.LG_GLSL || ''),
+  depthTest:false, depthWrite:false,
+});
+const postScene = new THREE.Scene();
+postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2), glassMat));
+const postCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+
+function resize(){
+  const dpr = Math.min(devicePixelRatio || 1, 1.5);
+  const w = innerWidth, h = innerHeight;
+  renderer.setPixelRatio(dpr); renderer.setSize(w, h, false);
+  camera.aspect = w/h; camera.updateProjectionMatrix();
+  makeRT(Math.round(w*dpr), Math.round(h*dpr));
+  glassMat.uniforms.uRes.value.set(w*dpr, h*dpr);
+  glassMat.uniforms.uAspect.value = w/h;
+}
+paintTex = new THREE.CanvasTexture(paintCanvas);
+paintTex.minFilter = THREE.LinearFilter; paintTex.magFilter = THREE.LinearFilter; paintTex.generateMipmaps = false;
+glassMat.uniforms.tPaint.value = paintTex;
+resize();
+
+// ---- liquid-glass slabs, sized from the layout: (element, padding, corner radius, bevel depth)
+const PANELS = [
+  { el:document.getElementById('copy'),       padX:30, padY:24, radius:28,  zR:34 },
+  { el:document.querySelector('.signup'),     padX:18, padY:11, radius:999, zR:14, button:true },
+  { el:document.querySelector('.sponsors'),   padX:28, padY:18, radius:24,  zR:30 },
+];
+for (const P of PANELS) if (P.button && P.el) {
+  P.el.addEventListener('mouseenter', () => { P.hover = 0.10; });
+  P.el.addEventListener('mouseleave', () => { P.hover = 0; });
+}
+function updatePanels(){
+  const dpr = renderer.getPixelRatio();
+  let n = 0;
+  for (const P of PANELS) {
+    if (!P.el || n >= 4) continue;
+    const r = P.el.getBoundingClientRect();
+    if (r.width === 0) continue;
+    const hw = r.width/2 + P.padX, hh = r.height/2 + P.padY;
+    glassMat.uniforms.uLGRect.value[n].set((r.left + r.width/2)*dpr, (innerHeight - (r.top + r.height/2))*dpr, hw*dpr, hh*dpr);
+    glassMat.uniforms.uLGParam.value[n].set(Math.min(P.radius, hh)*dpr, P.zR*dpr, 0, P.hover || 0);
+    n++;
+  }
+  glassMat.uniforms.uLGCount.value = n;
+}
+
+/* ------------------------------------------------------------------ */
+/*  4. Mapping between the screen and the glass plane                    */
+/* ------------------------------------------------------------------ */
+const halfH = () => CAM_Z*Math.tan(FOV*Math.PI/360);
+function screenToGlass(sx, sy){              // viewport px -> world point on z=0
+  const nx = (sx/innerWidth)*2-1, ny = 1-(sy/innerHeight)*2;
+  return new THREE.Vector3(nx*halfH()*camera.aspect, ny*halfH(), 0);
+}
+const _p = new THREE.Vector3();
+function worldToScreen(v){
+  _p.copy(v).project(camera);
+  return { x:(_p.x+1)/2*innerWidth, y:(1-_p.y)/2*innerHeight };
+}
+
+/* ------------------------------------------------------------------ */
+/*  5. Arm control: IK + behaviour                                       */
+/* ------------------------------------------------------------------ */
+const HOVER_Z = -0.42;   // resting: a soft silhouette
+const NEAR_Z  = -0.24;   // cursor over the headline: close enough to read the gripper
+const TOUCH_Z = -0.19;   // a poke: the fingertips sharpen, the servo block behind them stays a soft blob
+const target = new THREE.Vector3(-0.4, 0.1, HOVER_Z);      // where the fingertip wants to be
+const goal   = target.clone();                              // smoothed
+const goalV  = new THREE.Vector3();
+const CHAIN = ['shoulder_pan', 'shoulder_lift', 'elbow_flex', 'wrist_flex', 'wrist_roll'].map(n => J[n]);
+const N = CHAIN.length;
+const qS = CHAIN.map(() => 0);                               // joint angles actually shown (rate-limited)
+const qT = CHAIN.map(() => 0);                               // IK solution, warm-started every frame
+const Q_REST = [0, 0.15, 0.6, 0.0, 0];                       // posture the nullspace relaxes toward (elbow up, never folded)
+const W_REST = [0.02, 0.015, 0.015, 0.02, 0.4];              // wrist_roll can't move the tip, so it mostly rests
+const Q_VEL  = [3.5, 3.0, 3.2, 4.0, 4.0];                    // rad/s, roughly STS3215 under load
+const DIR_W = 0.35;                                          // aim (2 dof) vs position (3 dof)
+const _v = new THREE.Vector3(), _ax = new THREE.Vector3(), _o = new THREE.Vector3(), _tp = new THREE.Vector3(), _dir = new THREE.Vector3();
+const _m3 = new THREE.Matrix3();
+const shoulderW = new THREE.Vector3();
+let dirSign = 1, REACH = 1;
+
+// forward kinematics + analytic Jacobian: for a revolute joint, ∂tip/∂q = a × (tip − o), ∂dir/∂q = a × dir
+const Jm = Array.from({ length:6 }, () => new Array(N).fill(0));
+const f0 = new Array(6);
+function fk(qs) {
+  CHAIN.forEach((j, i) => setJoint(j, qs[i]));
+  armRoot.updateMatrixWorld(true);
+  tip.getWorldPosition(_tp);
+  _dir.set(0, 0, dirSign).transformDirection(tip.matrixWorld);   // gripper axis, pointing out of the jaws
+  f0[0] = _tp.x; f0[1] = _tp.y; f0[2] = _tp.z; f0[3] = _dir.x; f0[4] = _dir.y; f0[5] = _dir.z;
+  for (let i = 0; i < N; i++) {
+    const j = CHAIN[i];
+    _ax.copy(j.axis).transformDirection(j.node.parent.matrixWorld);
+    j.node.parent.getWorldPosition(_o);
+    _v.subVectors(_tp, _o); _v.crossVectors(_ax, _v);
+    Jm[0][i] = _v.x; Jm[1][i] = _v.y; Jm[2][i] = _v.z;
+    _v.crossVectors(_ax, _dir);
+    Jm[3][i] = _v.x*DIR_W; Jm[4][i] = _v.y*DIR_W; Jm[5][i] = _v.z*DIR_W;
+  }
+}
+// calibrate once: which way the gripper frame points, where the shoulder is, how far it can reach
+(function calibrate() {
+  fk(qT);
+  const w = new THREE.Vector3(); wristNode.getWorldPosition(w);
+  if (_dir.dot(_v.subVectors(_tp, w)) < 0) dirSign = -1;
+  J.shoulder_lift.node.parent.getWorldPosition(shoulderW);
+  let r = 0, prev = shoulderW.clone(), p = new THREE.Vector3();
+  for (const n of ['elbow_flex', 'wrist_flex', 'wrist_roll']) { J[n].node.parent.getWorldPosition(p); r += p.distanceTo(prev); prev.copy(p); }
+  r += _tp.distanceTo(prev);
+  REACH = r * 0.96;
+})();
+
+// (JᵀJ + λ²I + W) dq = Jᵀe + W (q_rest − q), with λ growing as the arm approaches a singularity
+function solveN(A, b) {
+  const M = A.map((row, i) => [...row, b[i]]); let det = 1;
+  for (let c = 0; c < N; c++) {
+    let p = c; for (let r = c+1; r < N; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (p !== c) { [M[c], M[p]] = [M[p], M[c]]; det = -det; }
+    det *= M[c][c];
+    for (let r = c+1; r < N; r++) { const f = M[r][c]/M[c][c]; for (let k = c; k <= N; k++) M[r][k] -= f*M[c][k]; }
+  }
+  const x = new Array(N);
+  for (let r = N-1; r >= 0; r--) { let sum = M[r][N]; for (let k = r+1; k < N; k++) sum -= M[r][k]*x[k]; x[r] = sum/M[r][r]; }
+  return { x, det };
+}
+const A = Array.from({ length:N }, () => new Array(N)), bvec = new Array(N), e = new Array(6);
+const want = new Array(6);
+function solveIK(tipTarget, aim, iterations = 8) {
+  want[0] = tipTarget.x; want[1] = tipTarget.y; want[2] = tipTarget.z; want[3] = aim.x; want[4] = aim.y; want[5] = aim.z;
+  for (let it = 0; it < iterations; it++) {
+    fk(qT);
+    for (let r = 0; r < 6; r++) e[r] = (want[r] - f0[r]) * (r < 3 ? 1 : DIR_W);
+    // manipulability from det(JᵀJ) of the positional part: small → near a singularity → damp harder
+    let manip = 0;
+    for (let i = 0; i < N; i++) for (let k = 0; k < N; k++) { let sum = 0; for (let r = 0; r < 6; r++) sum += Jm[r][i]*Jm[r][k]; A[i][k] = sum; }
+    manip = Math.sqrt(Math.max(solveN(A, new Array(N).fill(0)).det, 0));
+    const lambda2 = 0.004 + 0.25 * Math.pow(1 - Math.min(manip / 0.05, 1), 2);
+    for (let i = 0; i < N; i++) {
+      A[i][i] += lambda2 + W_REST[i];
+      let sum = 0; for (let r = 0; r < 6; r++) sum += Jm[r][i]*e[r];
+      bvec[i] = sum + W_REST[i]*(Q_REST[i] - qT[i]);
+    }
+    const dq = solveN(A, bvec).x;
+    let done = true;
+    for (let i = 0; i < N; i++) {
+      const step = THREE.MathUtils.clamp(dq[i], -0.25, 0.25);
+      qT[i] = THREE.MathUtils.clamp(qT[i] + step, CHAIN[i].lower, CHAIN[i].upper);
+      if (Math.abs(step) > 1e-4) done = false;
+    }
+    if (done) break;
+  }
+}
+// where the tip should be so that the gripper, pointing from the shoulder, aims at a point on the sheet
+const P = new THREE.Vector3(), aim = new THREE.Vector3(), tipT = new THREE.Vector3();
+function aimAt(sheetX, sheetY, depth) {
+  P.set(sheetX, sheetY, 0);
+  aim.subVectors(P, shoulderW).normalize();
+  const along = Math.max(-depth, 0.02) / Math.max(aim.z, 0.25);       // pull back along the aim line to sit `depth` behind the pane
+  tipT.copy(P).addScaledVector(aim, -along);
+  // stay inside the workspace: shrink toward the shoulder along the same line, so the aim is unchanged
+  const d = tipT.distanceTo(shoulderW);
+  if (d > REACH) tipT.lerpVectors(shoulderW, tipT, REACH / d);
+  if (tipT.z > TOUCH_Z) tipT.z = TOUCH_Z;
+}
+
+const mouse = { x:innerWidth*0.5, y:innerHeight*0.5, t:-1e9, down:false };
+addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.t = performance.now(); glassMat.uniforms.uMouse.value.set(e.clientX/innerWidth, 1-e.clientY/innerHeight); }, { passive:true });
+addEventListener('pointerdown', e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.t = performance.now(); mouse.down = true; poke.t = 0; poke.on = true; });
+addEventListener('pointerup', () => { mouse.down = false; });
+document.addEventListener('mouseleave', () => { mouse.t = -1e9; });
+
+// idle behaviour: wander to a letter, tap it, retreat
+const poke = { on:false, t:0, dur:1.5 };
+const idle = { next:1.5, letter:null };
+function pickLetter(){
+  const vis = letters.filter(L => !L.noIdle && L.cy > 0 && L.cy < innerHeight && L.cx > 0 && L.cx < innerWidth);
+  if (!vis.length) return null;
+  return vis[Math.floor(Math.random()*vis.length)];
+}
+
+/* ------------------------------------------------------------------ */
+/*  6. Letter physics                                                    */
+/* ------------------------------------------------------------------ */
+function stepLetters(dt, tipS, tipZ){
+  const contact = THREE.MathUtils.smoothstep(tipZ, -0.30, -0.20); // 0 far, 1 touching
+  const reach = 22 + 40*contact;
+  for (const L of letters) {
+    const lx = L.cx + L.x, ly = L.cy + L.y;
+    const ox = lx - tipS.x, oy = ly - tipS.y;
+    const rad = Math.max(L.hw, L.hh)*0.9 + reach;
+    const dist = Math.hypot(ox, oy);
+    if (contact > 0.02 && dist < rad) {
+      const push = (1 - dist/rad)*contact*1600*dt;
+      const nx = dist > 1e-3 ? ox/dist : 1, ny = dist > 1e-3 ? oy/dist : 0;
+      L.vx += nx*push; L.vy += ny*push;
+      L.vr += (nx*oy - ny*ox)/rad*push*0.02;
+      L.hit = 1;
+    }
+    // spring back to home
+    const k = 110, c = 11;
+    L.vx += (-k*L.x - c*L.vx)*dt; L.vy += (-k*L.y - c*L.vy)*dt; L.vr += (-k*L.r - c*L.vr)*dt;
+    L.x += L.vx*dt; L.y += L.vy*dt; L.r += L.vr*dt;
+    L.hit = Math.max(0, L.hit - dt*1.6);
+    if (Math.abs(L.x) + Math.abs(L.y) + Math.abs(L.r) > 0.02) {
+      L.el.style.transform = `translate(${L.x.toFixed(2)}px,${L.y.toFixed(2)}px) rotate(${(L.r*57.3).toFixed(2)}deg)`;
+      paintDirty = true;
+    } else if (L.el.style.transform) { L.el.style.transform = ''; paintDirty = true; }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  7. Frame loop                                                        */
+/* ------------------------------------------------------------------ */
+const clock = new THREE.Clock();
+const tipW = new THREE.Vector3();
+let visible = true;
+document.addEventListener('visibilitychange', () => { visible = !document.hidden; if (visible) { clock.getDelta(); loop(); } });
+
+function loop(){
+  if (!visible) return;
+  requestAnimationFrame(loop);
+  const dt = Math.min(clock.getDelta(), 0.05);
+  const t = clock.elapsedTime;
+
+  // --- decide where the fingertip should go
+  const userActive = performance.now() - mouse.t < 3000;
+  if (userActive) {
+    const p = screenToGlass(mouse.x, mouse.y);
+    target.x = p.x; target.y = p.y;
+    const tb = document.getElementById('copy').getBoundingClientRect(), pad = 48;
+    const overText = mouse.x > tb.left - pad && mouse.x < tb.right + pad && mouse.y > tb.top - pad && mouse.y < tb.bottom + pad;
+    const restZ = overText ? NEAR_Z : HOVER_Z;
+    if (poke.on) { poke.t += dt; const u = THREE.MathUtils.clamp(poke.t/poke.dur, 0, 1); target.z = THREE.MathUtils.lerp(restZ, TOUCH_Z, Math.sin(u*Math.PI)); if (u >= 1) poke.on = false; }
+    else target.z = mouse.down ? TOUCH_Z : restZ;
+    idle.next = t + 1.2;
+  } else if (!reduceMotion) {
+    if (poke.on) {
+      poke.t += dt; const u = THREE.MathUtils.clamp(poke.t/poke.dur, 0, 1);
+      target.z = THREE.MathUtils.lerp(HOVER_Z, TOUCH_Z, Math.pow(Math.max(0, Math.sin(u*Math.PI)), 0.7));
+      if (u >= 1) { poke.on = false; idle.next = t + 1.2 + Math.random()*1.8; }
+    } else if (t > idle.next) {
+      const L = pickLetter();
+      if (L) { idle.letter = L; const p = screenToGlass(L.cx, L.cy); target.x = p.x + (Math.random()-0.5)*0.06; target.y = p.y - 0.02 + (Math.random()-0.5)*0.04; }
+      idle.next = t + 1.1; poke.on = true; poke.t = -0.55; poke.dur = 1.5; // wait a beat over the letter, then lean in
+      target.z = HOVER_Z;
+    } else {
+      target.z = HOVER_Z;
+      // gentle drift while thinking about the next letter
+      target.x += Math.sin(t*0.7)*0.0004; target.y += Math.cos(t*0.9)*0.0003;
+    }
+  }
+
+  // --- critically-damped spring toward target (the servo feel)
+  const w0 = userActive ? 9.0 : 5.5;
+  for (const ax of ['x','y','z']) {
+    const acc = w0*w0*(target[ax] - goal[ax]) - 2*w0*goalV[ax];
+    goalV[ax] += acc*dt; goal[ax] += goalV[ax]*dt;
+  }
+  goal.z = Math.min(goal.z, TOUCH_Z);   // hard floor: the arm stays behind the glass
+
+  aimAt(goal.x, goal.y, goal.z);
+  solveIK(tipT, aim);
+  // servo-like motion: each joint moves toward the solution at a bounded rate — no snapping, ever
+  for (let i = 0; i < N; i++) {
+    const diff = qT[i] - qS[i];
+    const maxStep = Q_VEL[i] * dt;
+    qS[i] += THREE.MathUtils.clamp(diff * (1 - Math.exp(-dt*14)), -maxStep, maxStep);
+  }
+  CHAIN.forEach((j, i) => setJoint(j, qS[i]));
+  const sJ = 1 - Math.exp(-dt*10);
+  const jawT = poke.on ? 0.12 : 0.9;
+  setJoint(J.gripper, J.gripper.q + (jawT - J.gripper.q) * sJ);
+
+  // --- fingertip -> screen, push the ink
+  scene.updateMatrixWorld();
+  tip.getWorldPosition(tipW);
+  stepLetters(dt, worldToScreen(tipW), tipW.z);
+
+  // --- render the world, then look at it through the glass
+  if (paintDirty) drawPaint();
+  updatePanels();
+  glassMat.uniforms.uTime.value = t;
+  if (RAW) { renderer.setRenderTarget(null); renderer.render(scene, camera); return; }
+  renderer.setRenderTarget(rt); renderer.render(scene, camera);
+  const A = blurInto(rtH, rt, 3, 1.4);
+  const B = blurInto(rtQ, A, 3, 2.0);
+  const C = blurInto(rtE, B, 3, 2.2);
+  glassMat.uniforms.tScene.value = rt.texture; glassMat.uniforms.tDepth.value = rt.depthTexture;
+  glassMat.uniforms.tBlurA.value = A.texture; glassMat.uniforms.tBlurB.value = B.texture; glassMat.uniforms.tBlurC.value = C.texture;
+  renderer.setRenderTarget(null); renderer.render(postScene, postCam);
+}
+loop();
+})();
+</script>
+</body>
+</html>
