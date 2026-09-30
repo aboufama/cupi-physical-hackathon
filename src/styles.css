@@ -1,3 +1,17 @@
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/source-serif-4-italic-latin.woff2") format("woff2");
+}
 :root {
   --ink: #0a0a0a;          /* text on the glass */
   --pane: #e2e2e2;         /* fallback ground if WebGL is missing */
@@ -15,7 +29,7 @@ html, body {
 }
 body { min-height: 100vh; overflow-x: hidden; }
 
-/* the pane of glass — fixed, everything scrolls over it */
+/* The original fixed glass scene. */
 #glass { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; z-index: 0; }
 
 /* ink layer */
@@ -28,12 +42,12 @@ body { min-height: 100vh; overflow-x: hidden; }
 
 /* the title is Arial, painted through the enamel layer; its words are what the arm nudges. Two balanced lines. */
 .sub {
-  margin: 0; color: transparent; font-family: Arial, Helvetica, sans-serif; font-size: clamp(22px, 2.5vw, 36px);
+  margin: 0; color: var(--ink); font-weight: 400; font-family: Arial, Helvetica, sans-serif; font-size: clamp(22px, 2.5vw, 36px);
   letter-spacing: .12em; text-transform: uppercase; line-height: 1.3; max-width: 34ch; text-wrap: balance;
 }
 .sub > span { display: block; }
 .desc {
-  margin: 1.5em 0 0; color: transparent; font-family: Arial, Helvetica, sans-serif; font-size: clamp(12px, .95vw, 14px);
+  margin: 1.5em 0 0; color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: clamp(12px, .95vw, 14px);
   line-height: 1.6; letter-spacing: .005em; max-width: 52ch;
 }
 .desc p { margin: 0 0 .95em; }
@@ -52,17 +66,16 @@ body { min-height: 100vh; overflow-x: hidden; }
 }
 .signup:focus-visible { outline: 1px solid var(--ink); outline-offset: 6px; }
 
-/* the top bar, pinned top left on the copy's column, bare on the pane (no glass): hosts, an x, sponsors. All of it is
-   plain DOM, the x included; nothing here goes through the pane shader. */
+/* Company logos stay at the top right. */
 .topbar {
-  position: fixed; left: var(--gutter); max-width: calc(100vw - 2 * var(--gutter)); top: var(--gutter); z-index: 2;
-  display: flex; flex-wrap: wrap; align-items: stretch; justify-content: flex-start; gap: 18px clamp(28px, 3vw, 44px);
+  position: fixed; right: var(--gutter); max-width: calc(100vw - 2 * var(--gutter)); top: var(--gutter); z-index: 2;
+  display: flex; flex-wrap: wrap; align-items: stretch; justify-content: flex-end; gap: 18px clamp(28px, 3vw, 44px);
 }
 .topbar .x {
   color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: clamp(18px, 1.7vw, 24px); line-height: 1;
   display: inline-block; align-self: center;
 }
-.hosts, .sponsors { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; }
+.hosts, .sponsors { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
 .hosts { gap: 12px clamp(28px, 2.8vw, 40px); }
 .sponsors { gap: 14px clamp(30px, 4vw, 58px); }
 .logo { display: block; color: var(--ink); }
@@ -99,3 +112,24 @@ body { min-height: 100vh; overflow-x: hidden; }
   .desc { font-size: 12.5px; max-width: none; }
   .sub { font-size: 22px; letter-spacing: .1em; }
 }
+
+/* Keep the copy readable until the textured scene has rendered. */
+#glass { pointer-events: none; }
+#glass[hidden] { display: none; }
+html[data-glass-ready="true"] .sub,
+html[data-glass-ready="true"] .desc { color: transparent; }
+.scene-poster { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.scene-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+html[data-glass-ready="true"] .scene-poster { visibility: hidden; }
+html:not([data-glass-ready="true"]) .signup {
+  padding: 12px 22px; margin-left: 0; background: #ffffff45;
+  border: 1px solid #ffffffa0; border-radius: 14px;
+}
+span.signup { cursor: default; }
+.hero { min-height: 0; }
+.copy { max-width: 100%; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 5px; }
+main:focus { outline: none; }
+.skip-link { position: fixed; top: -100px; left: 20px; z-index: 10; padding: 12px; background: white; color: var(--ink); }
+.skip-link:focus { top: 12px; }
+.js-message { position: fixed; bottom: 12px; right: var(--gutter); font: 11px Arial, sans-serif; }

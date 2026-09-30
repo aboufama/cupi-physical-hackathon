@@ -1,0 +1,143 @@
+{
+  "functional": {
+    "timestamp": "2026-09-24T03:35:54.537Z",
+    "baseURL": "http://127.0.0.1:4173/",
+    "results": [
+      {
+        "name": "Layout 1440px",
+        "status": "passed",
+        "detail": "No overflow, clipped text, broken images, dead links, or missing anchors; correct sponsors."
+      },
+      {
+        "name": "Layout 1024px",
+        "status": "passed",
+        "detail": "No overflow, clipped text, broken images, dead links, or missing anchors; correct sponsors."
+      },
+      {
+        "name": "Layout 768px",
+        "status": "passed",
+        "detail": "No overflow, clipped text, broken images, dead links, or missing anchors; correct sponsors."
+      },
+      {
+        "name": "Layout 390px",
+        "status": "passed",
+        "detail": "No overflow, clipped text, broken images, dead links, or missing anchors; correct sponsors."
+      },
+      {
+        "name": "Layout 320px",
+        "status": "passed",
+        "detail": "No overflow, clipped text, broken images, dead links, or missing anchors; correct sponsors."
+      },
+      {
+        "name": "Navigation, FAQ, and schedule",
+        "status": "passed",
+        "detail": "Anchor links, registration destination, keyboard tabs and FAQ disclosure all work."
+      },
+      {
+        "name": "Calendar and clipboard",
+        "status": "passed",
+        "detail": "Valid one-day calendar download, clipboard content and dismissible feedback."
+      },
+      {
+        "name": "Mobile menu and keyboard",
+        "status": "passed",
+        "detail": "Menu opens, follows links, closes after navigation and responds to Escape."
+      },
+      {
+        "name": "Motion and WebGL fallback",
+        "status": "passed",
+        "detail": "Reduced-motion preference respected; pause/resume works; content remains readable without WebGL."
+      },
+      {
+        "name": "200% zoom-equivalent viewport",
+        "status": "passed",
+        "detail": "No overflow at 720 CSS pixels with 2× scaling, equivalent to 1440px desktop at 200% zoom."
+      },
+      {
+        "name": "Event content without JavaScript",
+        "status": "passed",
+        "detail": "Full event content, both schedule phases, native FAQ and directions remain available."
+      }
+    ],
+    "failures": [],
+    "errors": []
+  },
+  "axe": {
+    "390": {
+      "version": "4.13.0",
+      "violations": 0,
+      "passes": 27
+    },
+    "1440": {
+      "version": "4.13.0",
+      "violations": 0,
+      "passes": 27
+    }
+  },
+  "lighthouse": {
+    "mobile": {
+      "lighthouseVersion": "13.5.0",
+      "timestamp": "2026-09-24T03:35:12.337Z",
+      "scores": {
+        "performance": 93,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 2255.25,
+          "display": "2.3 s"
+        },
+        "largest-contentful-paint": {
+          "value": 2780.25,
+          "display": "2.8 s"
+        },
+        "total-blocking-time": {
+          "value": 0,
+          "display": "0 ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0,
+          "display": "0"
+        },
+        "speed-index": {
+          "value": 3198.936976000182,
+          "display": "3.2 s"
+        }
+      }
+    },
+    "desktop": {
+      "lighthouseVersion": "13.5.0",
+      "timestamp": "2026-09-24T03:36:07.359Z",
+      "scores": {
+        "performance": 99,
+        "accessibility": 100,
+        "best-practices": 100,
+        "seo": 100
+      },
+      "metrics": {
+        "first-contentful-paint": {
+          "value": 487.65000000000003,
+          "display": "0.5 s"
+        },
+        "largest-contentful-paint": {
+          "value": 567.6500000000001,
+          "display": "0.6 s"
+        },
+        "total-blocking-time": {
+          "value": 0,
+          "display": "0 ms"
+        },
+        "cumulative-layout-shift": {
+          "value": 0,
+          "display": "0"
+        },
+        "speed-index": {
+          "value": 1138.772577000011,
+          "display": "1.1 s"
+        }
+      }
+    }
+  }
+}

@@ -28,7 +28,7 @@ function applyOrigin(obj, o) {
   obj.rotation.set(rpy[0], rpy[1], rpy[2], 'ZYX');            // URDF rpy = fixed-axis roll, pitch, yaw
 }
 
-export async function loadRobot(base = '/so101') {
+export async function loadRobot(base = `${import.meta.env.BASE_URL}so101`) {
   const [urdf, manifest, bin] = await Promise.all([
     fetch(`${base}/so101.urdf`).then((r) => r.text()),
     fetch(`${base}/meshes.json`).then((r) => r.json()),

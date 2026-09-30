@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /variation.html
+Disallow: /compare.html

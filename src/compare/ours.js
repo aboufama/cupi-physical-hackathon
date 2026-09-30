@@ -78,7 +78,7 @@ export function mountOurs(root, canvas, cfg, shapes) {
   const U = (p, n) => gl.getUniformLocation(p, n);
 
   let bgTex = null, blurTex = null, fbos = null, disposed = false;
-  const img = new Image(); img.src = '/compare/bg.png';
+  const img = new Image(); img.src = `${import.meta.env.BASE_URL}compare/bg.png`;
 
   function render() {
     if (disposed || !img.complete || !img.naturalWidth) return;

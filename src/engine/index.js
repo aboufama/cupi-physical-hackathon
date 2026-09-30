@@ -6,17 +6,18 @@ import { createIK } from './ik.js';
 import { createText } from './text.js';
 
 // The whole thing behind and on the pane. Created once by <GlassPane/>; dispose() tears it all down.
-export function createEngine({ canvas }) {
+export function createEngine({ canvas, paused = false, onError = () => {} }) {
+  let sceneDirty = true;
   const RAW = location.search.includes('raw');                 // ?raw: the scene without the glass
   const SMOOTH = location.search.includes('smooth') || !!window.SMOOTH_FROST;   // ?smooth: frosted with no etch texture
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const disposers = [];
   const on = (target, type, fn, opts) => { target.addEventListener(type, fn, opts); disposers.push(() => target.removeEventListener(type, fn, opts)); };
 
   /* ---- renderer ---------------------------------------------------- */
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' }); }
-  catch { canvas.hidden = true; return { dispose() {} }; }    // no WebGL: the page still reads on the plain pane
+  catch { canvas.hidden = true; onError(); return { dispose() {}, setPaused() {} }; }
+  on(canvas, 'webglcontextlost', (event) => { event.preventDefault(); canvas.hidden = true; delete document.documentElement.dataset.glassReady; onError(); });
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // we gamma-encode in the pane shader
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.shadowMap.enabled = true;
@@ -66,7 +67,8 @@ export function createEngine({ canvas }) {
     tip = robot.links.gripper_frame_link;                    // the point between the fingertips
     ik = createIK({ robot, armRoot, tip, wristNode: robot.links.wrist_link, floorY: BENCH_Y + 0.12 });
     J = robot.joints;
-  }).catch((err) => console.error('SO-101 failed to load', err));
+    sceneDirty = true;
+  }).catch((err) => { if (!disposed) { canvas.hidden = true; delete document.documentElement.dataset.glassReady; onError(); console.error('SO-101 failed to load', err); } });
 
   /* ---- the copy, painted ------------------------------------------- */
   const text = createText({});                               // only the copy is painted; the whole top row is plain DOM
@@ -137,7 +139,7 @@ export function createEngine({ canvas }) {
     makeRT(Math.round(w * dpr), Math.round(h * dpr));
     glassMat.uniforms.uRes.value.set(w * dpr, h * dpr);
     glassMat.uniforms.uAspect.value = w / h;
-    text.measure();
+    text.measure(); text.fonts(); sceneDirty = true;
   }
   resize();
   on(window, 'resize', resize);
@@ -173,7 +175,7 @@ export function createEngine({ canvas }) {
       p.hover += ((p.inside ? 1 : 0) - p.hover) * (1 - Math.exp(-dt * (p.inside ? 16 : 9)));
       const w0 = 22, zeta = 0.6, pressT = p.button && p.held ? 1 : 0;
       p.pressV += (w0 * w0 * (pressT - p.press) - 2 * zeta * w0 * p.pressV) * dt; p.press += p.pressV * dt;
-      const grow = reduceMotion ? 0 : 1 + P.pressGrow * p.press;
+      const grow = paused ? 1 : 1 + P.pressGrow * p.press;
       hw *= grow; hh *= grow;
       const radius = Math.min(p.radius * grow, hh);
       const lift = p.button ? P.hoverLift * p.hover + P.pressLift * p.press : 0;
@@ -214,13 +216,16 @@ export function createEngine({ canvas }) {
   on(document, 'visibilitychange', () => { if (!document.hidden) { clock.getDelta(); cancelAnimationFrame(raf); loop(); } });
 
   function loop() {
-    if (disposed || document.hidden) return;
+    if (disposed || document.hidden || canvas.hidden) return;
     raf = requestAnimationFrame(loop);
+    const hero = document.getElementById('home');
+    if (hero && scrollY > hero.offsetHeight) return;
+    if (paused && !text.dirty && !sceneDirty) return;
     const dt = Math.min(clock.getDelta(), 0.05);
     const t = clock.elapsedTime;
 
     // --- decide where the fingertip should go
-    const userActive = performance.now() - mouse.t < 3000;
+    const userActive = !paused && performance.now() - mouse.t < 3000;
     if (userActive) {
       screenToGlass(mouse.x, mouse.y, tmp); target.x = tmp.x; target.y = tmp.y;
       const tb = copyEl ? copyEl.getBoundingClientRect() : null, pad = 48;
@@ -229,7 +234,7 @@ export function createEngine({ canvas }) {
       if (poke.on) { poke.t += dt; const u = THREE.MathUtils.clamp(poke.t / poke.dur, 0, 1); target.z = THREE.MathUtils.lerp(restZ, TOUCH_Z, Math.sin(u * Math.PI)); if (u >= 1) poke.on = false; }
       else target.z = mouse.down ? TOUCH_Z : restZ;
       idle.next = t + 1.2;
-    } else if (!reduceMotion) {
+    } else if (!paused) {
       if (poke.on) {
         poke.t += dt; const u = THREE.MathUtils.clamp(poke.t / poke.dur, 0, 1);
         target.z = THREE.MathUtils.lerp(HOVER_Z, TOUCH_Z, Math.pow(Math.max(0, Math.sin(u * Math.PI)), 0.7));
@@ -253,7 +258,7 @@ export function createEngine({ canvas }) {
     }
     goal.z = Math.min(goal.z, TOUCH_Z);   // hard floor: the arm stays behind the glass
 
-    if (ik) {
+    if (ik && (!paused || sceneDirty)) {
       ik.aimAt(goal.x, goal.y, goal.z, TOUCH_Z);
       ik.solve(ik.tipT, ik.aim);
       ik.step(dt);
@@ -276,16 +281,31 @@ export function createEngine({ canvas }) {
     glassMat.uniforms.tScene.value = rt.texture; glassMat.uniforms.tDepth.value = rt.depthTexture;
     glassMat.uniforms.tBlurA.value = A.texture; glassMat.uniforms.tBlurB.value = B.texture; glassMat.uniforms.tBlurC.value = C.texture;
     renderer.setRenderTarget(null); renderer.render(postScene, postCam);
+    sceneDirty = false;
+    document.documentElement.dataset.glassReady = 'true';
+    canvas.dataset.status = 'ready';
+    canvas.dataset.paused = String(paused);
   }
   loop();
 
   return {
+    setPaused(value) { paused = value; sceneDirty = true; },
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);
       disposers.forEach((d) => d());
       allRT().forEach((t) => t.dispose());
       paintTex.dispose(); glassMat.dispose(); blurMat.dispose();
+      const geometries = new Set();
+      const materials = new Set();
+      for (const group of [scene, blurScene, postScene]) group.traverse(node => {
+        if (node.geometry) geometries.add(node.geometry);
+        // Robot materials are shared by its loader. Keep them available to other views.
+        if (node.material && !upright.getObjectById(node.id)) materials.add(node.material);
+      });
+      geometries.forEach(value => value.dispose());
+      materials.forEach(value => value.dispose());
+      key.shadow.map?.dispose();
       renderer.dispose();
     },
   };

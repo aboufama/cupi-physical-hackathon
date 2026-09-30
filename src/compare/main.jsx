@@ -54,7 +54,7 @@ function Library() {
   }, []);
   return (
     <div className="root lib" ref={root}>
-      <img className="bg" src="/compare/bg.png" alt="" />
+      <img className="bg" src={`${import.meta.env.BASE_URL}compare/bg.png`} alt="" />
       <Panels />
     </div>
   );

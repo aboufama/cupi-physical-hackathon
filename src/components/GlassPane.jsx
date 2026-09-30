@@ -1,14 +1,53 @@
-import { useEffect, useRef } from 'react';
-import { createEngine } from '../engine/index.js';
+import { useEffect, useRef } from "react";
 
-// The pane of frosted glass with the SO-101 behind it. React owns the element; the engine owns everything
-// drawn on it. The copy, sign-up and sponsors are ordinary DOM above this canvas, and the engine reads their
-// layout to paint the words and to place the liquid-glass slabs.
+// Start the textured glass immediately; the poster is only a loading/WebGL fallback.
 export default function GlassPane() {
   const ref = useRef(null);
   useEffect(() => {
-    const engine = createEngine({ canvas: ref.current });
-    return () => engine.dispose();
+    let cancelled = false;
+    let engine;
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotion = () => engine?.setPaused(motion.matches);
+    const unavailable = () => {
+      ref.current.hidden = true;
+      delete document.documentElement.dataset.glassReady;
+    };
+    async function start() {
+      try {
+        const { createEngine } = await import("../engine/index.js");
+        if (cancelled) return;
+        ref.current.hidden = false;
+        engine = createEngine({
+          canvas: ref.current,
+          paused: motion.matches,
+          onError: unavailable,
+        });
+      } catch {
+        if (!cancelled) unavailable();
+      }
+    }
+    start();
+    motion.addEventListener("change", updateMotion);
+    return () => {
+      cancelled = true;
+      motion.removeEventListener("change", updateMotion);
+      engine?.dispose();
+      delete document.documentElement.dataset.glassReady;
+    };
   }, []);
-  return <canvas id="glass" ref={ref} aria-hidden="true" />;
+  return (
+    <>
+      <picture className="scene-poster" aria-hidden="true">
+        <source media="(max-width: 760px)" srcSet={`${import.meta.env.BASE_URL}scene-mobile.jpg`} />
+        <img
+          src={`${import.meta.env.BASE_URL}scene-desktop.jpg`}
+          width="1440"
+          height="1000"
+          alt=""
+          fetchPriority="high"
+        />
+      </picture>
+      <canvas id="glass" ref={ref} aria-hidden="true" />
+    </>
+  );
 }

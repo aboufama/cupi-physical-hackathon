@@ -3,3 +3,7 @@ dist
 .DS_Store
 dist-before
 .sites-runtime
+
+.env
+.env.*
+!.env.example
